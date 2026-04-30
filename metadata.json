@@ -1,0 +1,7 @@
+{
+  "name": "Ruhi - AI Voice Assistant",
+  "description": "A sassy, witty, and intelligent Indian female AI voice assistant.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
