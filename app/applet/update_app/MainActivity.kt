@@ -24,57 +24,42 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
+    private var geminiLiveClient: GeminiLiveClient? = null
+    
     private val ruhiEventsReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 "WAKE_WORD_DETECTED" -> {
-                    speak("Yes boss?")
-                    startListening()
+                    startLiveSession("You were just woken up by the user saying Ruhi. Say a short and sweet greeting like 'Yes, boss?' or 'I am here.'")
                 }
                 "com.ruhi.ACTION_ANNOUNCE_CALL" -> {
                     val callerName = intent.getStringExtra("callerName")
-                    speak("Boss, $callerName's call is coming. Should I answer or reject?")
-                    // Start listening for an answer shortly
-                    tvStatus.postDelayed({ startListening() }, 3500)
+                    startLiveSession("A call is coming from $callerName. Ask me if I want to answer or reject it.")
                 }
                 "com.ruhi.ACTION_READ_NOTIFICATION" -> {
                     val sender = intent.getStringExtra("sender")
                     val message = intent.getStringExtra("message")
-                    speak("Boss, new message from $sender on WhatsApp. It says: $message")
+                    startLiveSession("There is a new WhatsApp message from $sender. It says: $message. Read it out loud and ask if I want to reply.")
                 }
                 "com.ruhi.ACTION_SCREEN_TEXT_RESULT" -> {
                     val text = intent.getStringExtra("text") ?: ""
                     if (text.isNotBlank()) {
-                        geminiService.generateResponse("Analyze this screen text and tell me briefly what is on my screen: $text",
-                            onSuccess = { analysis ->
-                                speak(analysis)
-                            },
-                            onError = {
-                                speak("I couldn't analyze the screen right now.")
-                            }
-                        )
+                        geminiLiveClient?.sendSystemText("I am providing the text on the user's screen. Tell me briefly what is on my screen: $text")
                     } else {
-                        speak("I couldn't read anything on the screen, boss.")
+                        geminiLiveClient?.sendSystemText("I couldn't read anything on the screen.")
                     }
                 }
             }
         }
     }
 
-    private lateinit var tts: TextToSpeech
-    private lateinit var speechRecognizer: SpeechRecognizer
     private lateinit var tvStatus: TextView
     private lateinit var btnListen: Button
-    
-    private lateinit var commandProcessor: CommandProcessor
-    private lateinit var geminiService: GeminiService
-
     private lateinit var layoutContainer: android.widget.LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Remove standard setContentView and build programmatically
         layoutContainer = android.widget.LinearLayout(this).apply {
             orientation = android.widget.LinearLayout.VERTICAL
             setPadding(32, 32, 32, 32)
@@ -82,7 +67,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         tvStatus = TextView(this).apply {
-            text = "Ruhi AI Assistant"
+            text = "Ruhi AI Assistant (Live WebSocket Mode)"
             textSize = 20f
             setPadding(0, 0, 0, 32)
             setTextColor(android.graphics.Color.BLACK)
@@ -90,7 +75,7 @@ class MainActivity : AppCompatActivity() {
         layoutContainer.addView(tvStatus)
 
         btnListen = Button(this).apply {
-            text = "Tap to Listen"
+            text = "Tap to Start Live Session"
         }
         layoutContainer.addView(btnListen)
 
@@ -102,7 +87,6 @@ class MainActivity : AppCompatActivity() {
         }
         layoutContainer.addView(sectionTitle)
 
-        // Services Toggle UI
         val prefs = getSharedPreferences("RuhiSettings", Context.MODE_PRIVATE)
         val servicesMap = listOf(
             "Wake Word (Background)" to "service_wakeword",
@@ -130,15 +114,10 @@ class MainActivity : AppCompatActivity() {
                                     } else {
                                         startService(serviceIntent)
                                     }
-                                } catch (e: android.app.ForegroundServiceStartNotAllowedException) {
-                                    e.printStackTrace()
-                                    speak("I cannot start background services right now.")
                                 } catch (e: Exception) {
                                     e.printStackTrace()
-                                    speak("Error starting service.")
                                 }
                             } else {
-                                speak("Please grant microphone permission first.")
                                 switchView.isChecked = false
                             }
                         } else {
@@ -151,27 +130,16 @@ class MainActivity : AppCompatActivity() {
         }
 
         setContentView(layoutContainer)
-
-        // Request Necessary Permissions
         requestPermissions()
 
-        // Setup AI Services
-        geminiService = GeminiService(apiKey = "YOUR_GEMINI_API_KEY_HERE") // Replace with actual key securely
-        commandProcessor = CommandProcessor(this, ::speak, geminiService)
-
-        // Register Wake Word and Other Services Broadcasts
         val filter = IntentFilter().apply {
             addAction("WAKE_WORD_DETECTED")
             addAction("com.ruhi.ACTION_ANNOUNCE_CALL")
             addAction("com.ruhi.ACTION_READ_NOTIFICATION")
             addAction("com.ruhi.ACTION_SCREEN_TEXT_RESULT")
         }
-        ContextCompat.registerReceiver(
-            this, ruhiEventsReceiver, filter,
-            ContextCompat.RECEIVER_NOT_EXPORTED
-        )
+        ContextCompat.registerReceiver(this, ruhiEventsReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
         
-        // Start Background Wake Word Service based on preference
         if (prefs.getBoolean("service_wakeword", true)) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
                 val serviceIntent = Intent(this, WakeWordService::class.java)
@@ -187,30 +155,30 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Initialize Text to Speech
-        tts = TextToSpeech(this) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                tts.language = Locale("en", "IN") // Indian Accent
-                tts.setPitch(0.9f)
-                tts.setSpeechRate(0.95f)
-                
-                tts.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
-                    override fun onStart(utteranceId: String?) {}
-                    override fun onDone(utteranceId: String?) {
-                        if (utteranceId == "ruhi_listen_after") {
-                            runOnUiThread { startListening() }
-                        }
-                    }
-                    override fun onError(utteranceId: String?) {}
-                })
-            }
-        }
-
-        // Initialize Speech Recognizer
-        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
-        
         btnListen.setOnClickListener {
-            startListening()
+            startLiveSession(null)
+        }
+    }
+
+    private fun startLiveSession(initialPrompt: String?) {
+        if (geminiLiveClient?.isRecording == true) return
+        
+        tvStatus.text = "Ruhi: Active (Live Voice Session)"
+        geminiLiveClient = GeminiLiveClient(
+            context = this,
+            apiKey = "YOUR_GEMINI_API_KEY_HERE", // Replace securely in real app
+            onSessionEnded = {
+                tvStatus.text = "Ruhi is sleeping... Say 'Ruhi' to wake me."
+                geminiLiveClient = null
+            }
+        )
+        geminiLiveClient?.startSession()
+        
+        if (initialPrompt != null) {
+            // Need slight delay to allow websocket to connect before sending system text
+            tvStatus.postDelayed({
+                geminiLiveClient?.sendSystemText(initialPrompt)
+            }, 1000)
         }
     }
 
@@ -254,7 +222,7 @@ class MainActivity : AppCompatActivity() {
                             startActivity(intent)
                         } catch (e: Exception) {
                             e.printStackTrace()
-                            speak("I need display over other apps permission.")
+                            tvStatus.text = "I need display over other apps permission."
                         }
                     }
                 }
@@ -271,7 +239,7 @@ class MainActivity : AppCompatActivity() {
                             startActivity(intent)
                         } catch (e: Exception) {
                             e.printStackTrace()
-                            speak("Could not open battery settings.")
+                            tvStatus.text = "Could not open battery settings."
                         }
                     }
                 }
@@ -282,7 +250,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun checkAccessibilityService() {
         if (!isAccessibilityServiceEnabled(this, RuhiAccessibilityService::class.java)) {
-            speak("Boss, please enable Accessibility Service in Settings later.")
+            tvStatus.text = "Boss, please enable Accessibility Service in Settings later."
             val btnAcc = Button(this).apply {
                 text = "Enable Accessibility (Screen/WhatsApp)"
                 setOnClickListener {
@@ -318,54 +286,8 @@ class MainActivity : AppCompatActivity() {
         return false
     }
 
-    private fun startListening() {
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-IN")
-            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
-        }
-
-        speechRecognizer.setRecognitionListener(object : RecognitionListener {
-            override fun onReadyForSpeech(params: Bundle?) {}
-            override fun onBeginningOfSpeech() {}
-            override fun onRmsChanged(rmsdB: Float) {}
-            override fun onBufferReceived(buffer: ByteArray?) {}
-            override fun onEndOfSpeech() {}
-            override fun onError(error: Int) {
-                // If it times out or errors, just go back to silent standby
-                tvStatus.text = "Error recognizing speech: $error. Say 'Ruhi' to wake me."
-            }
-            override fun onResults(results: Bundle?) {
-                val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                if (!matches.isNullOrEmpty()) {
-                    val command = matches[0]
-                    tvStatus.text = "You: $command"
-                    commandProcessor.process(command) // Process handles the command
-                }
-            }
-            override fun onPartialResults(partialResults: Bundle?) {}
-            override fun onEvent(eventType: Int, params: Bundle?) {}
-        })
-
-        speechRecognizer.startListening(intent)
-        tvStatus.text = "Ruhi is listening..."
-    }
-
-    // Public method so CommandProcessor can trigger speech seamlessly
-    fun speak(text: String, listenAfter: Boolean = false) {
-        tvStatus.text = "Ruhi: $text"
-        if (::tts.isInitialized) {
-            val utteranceId = if (listenAfter) "ruhi_listen_after" else "ruhi_normal"
-            // Use bundle params instead of deprecated hashmap
-            val params = Bundle()
-            params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId)
-            tts.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId)
-        }
-    }
-
     override fun onDestroy() {
-        if (::tts.isInitialized) tts.shutdown()
-        if (::speechRecognizer.isInitialized) speechRecognizer.destroy()
+        geminiLiveClient?.stopSession()
         unregisterReceiver(ruhiEventsReceiver)
         super.onDestroy()
     }

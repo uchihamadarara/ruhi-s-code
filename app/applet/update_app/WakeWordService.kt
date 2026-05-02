@@ -29,8 +29,36 @@ class WakeWordService : Service() {
         return null
     }
 
+    private val controlReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: android.content.Context?, intent: Intent?) {
+            when (intent?.action) {
+                "com.ruhi.ACTION_PAUSE_WAKEWORD" -> {
+                    isPaused = true
+                    speechRecognizer?.cancel()
+                    isListening = false
+                }
+                "com.ruhi.ACTION_RESUME_WAKEWORD" -> {
+                    isPaused = false
+                    restartListening()
+                }
+            }
+        }
+    }
+
+    private var isPaused = false
+
     override fun onCreate() {
         super.onCreate()
+        
+        val filter = android.content.IntentFilter().apply {
+            addAction("com.ruhi.ACTION_PAUSE_WAKEWORD")
+            addAction("com.ruhi.ACTION_RESUME_WAKEWORD")
+        }
+        androidx.core.content.ContextCompat.registerReceiver(
+            this, controlReceiver, filter,
+            androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+        
         createNotificationChannel()
         val notification = NotificationCompat.Builder(this, "WakeWordChannel")
             .setContentTitle("Ruhi AI is Active")
@@ -93,7 +121,7 @@ class WakeWordService : Service() {
     }
 
     private fun restartListening() {
-        if (!isListening) {
+        if (!isListening && !isPaused) {
             mainHandler.postDelayed({
                 try {
                     speechRecognizer?.startListening(recognizerIntent)
@@ -130,6 +158,7 @@ class WakeWordService : Service() {
     }
 
     override fun onDestroy() {
+        unregisterReceiver(controlReceiver)
         speechRecognizer?.destroy()
         super.onDestroy()
     }
