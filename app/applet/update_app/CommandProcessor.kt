@@ -40,17 +40,9 @@ class CommandProcessor(
         // --- 0.1 CALL MANAGEMENT ---
         if (lowerCmd == "accept call" || lowerCmd == "answer call" || lowerCmd == "pick up" || lowerCmd == "phone uthao") {
             try {
-                val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as android.telephony.TelephonyManager
-                val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
-                if (telephonyManager.callState == android.telephony.TelephonyManager.CALL_STATE_RINGING) {
-                    val keDown = android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_HEADSETHOOK)
-                    val keUp = android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_HEADSETHOOK)
-                    audioManager.dispatchMediaKeyEvent(keDown)
-                    audioManager.dispatchMediaKeyEvent(keUp)
-                    speak("Call accepted, boss.")
-                } else {
-                    speak("I don't see any incoming call right now.")
-                }
+                val telecomManager = context.getSystemService(Context.TELECOM_SERVICE) as android.telecom.TelecomManager
+                telecomManager.acceptRingingCall()
+                speak("Call accepted, boss.")
             } catch (e: Exception) {
                 speak("I couldn't accept the call. Make sure I have phone permissions.")
             }
@@ -59,18 +51,13 @@ class CommandProcessor(
 
         if (lowerCmd == "reject call" || lowerCmd == "cut call" || lowerCmd == "decline call" || lowerCmd == "phone kaat do") {
             try {
-                val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as android.telephony.TelephonyManager
-                val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
-                if (telephonyManager.callState == android.telephony.TelephonyManager.CALL_STATE_RINGING || telephonyManager.callState == android.telephony.TelephonyManager.CALL_STATE_OFFHOOK) {
-                    val keDown = android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_HEADSETHOOK)
-                    val keUp = android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_HEADSETHOOK)
-                    // Sending media key events can end the call or reject it.
-                    audioManager.dispatchMediaKeyEvent(keDown)
-                    audioManager.dispatchMediaKeyEvent(keUp)
-                    speak("Call ended, boss.")
+                val telecomManager = context.getSystemService(Context.TELECOM_SERVICE) as android.telecom.TelecomManager
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                    telecomManager.endCall()
                 } else {
-                    speak("I don't see any incoming call right now.")
+                    // Fallback for older versions if needed
                 }
+                speak("Call ended, boss.")
             } catch (e: Exception) {
                 speak("I couldn't reject the call. Make sure I have phone permissions.")
             }

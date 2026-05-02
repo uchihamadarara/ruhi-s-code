@@ -37,10 +37,15 @@ class WakeWordService : Service() {
             .setContentText("Listening for 'Ruhi' natively in the background...")
             .setSmallIcon(android.R.drawable.ic_btn_speak_now) // Default icon, replace with your app icon
             .build()
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            startForeground(1, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
-        } else {
-            startForeground(1, notification)
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                startForeground(1, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+            } else {
+                startForeground(1, notification)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // In Android 12+, starting foreground service from background without permission crashes
         }
         
         initSpeechRecognizer()

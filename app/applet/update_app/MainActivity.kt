@@ -124,10 +124,18 @@ class MainActivity : AppCompatActivity() {
                         val serviceIntent = Intent(this@MainActivity, WakeWordService::class.java)
                         if (isChecked) {
                             if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                                    startForegroundService(serviceIntent)
-                                } else {
-                                    startService(serviceIntent)
+                                try {
+                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                                        startForegroundService(serviceIntent)
+                                    } else {
+                                        startService(serviceIntent)
+                                    }
+                                } catch (e: android.app.ForegroundServiceStartNotAllowedException) {
+                                    e.printStackTrace()
+                                    speak("I cannot start background services right now.")
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                    speak("Error starting service.")
                                 }
                             } else {
                                 speak("Please grant microphone permission first.")
@@ -167,10 +175,14 @@ class MainActivity : AppCompatActivity() {
         if (prefs.getBoolean("service_wakeword", true)) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
                 val serviceIntent = Intent(this, WakeWordService::class.java)
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                    startForegroundService(serviceIntent)
-                } else {
-                    startService(serviceIntent)
+                try {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        startForegroundService(serviceIntent)
+                    } else {
+                        startService(serviceIntent)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             }
         }
@@ -226,7 +238,46 @@ class MainActivity : AppCompatActivity() {
             ActivityCompat.requestPermissions(this, needed.toTypedArray(), 1)
         }
         
+        checkAdvancedPermissions()
+    }
+
+    private fun checkAdvancedPermissions() {
         checkAccessibilityService()
+        
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            if (!Settings.canDrawOverlays(this)) {
+                val btnOverlay = Button(this).apply {
+                    text = "Enable Display Over Other Apps (For Background Actions)"
+                    setOnClickListener {
+                        try {
+                            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, android.net.Uri.parse("package:$packageName"))
+                            startActivity(intent)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            speak("I need display over other apps permission.")
+                        }
+                    }
+                }
+                layoutContainer.addView(btnOverlay)
+            }
+            
+            val powerManager = getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+            if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
+                val btnBattery = Button(this).apply {
+                    text = "Disable Battery Optimization (Keeps Ruhi Alive)"
+                    setOnClickListener {
+                        try {
+                            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, android.net.Uri.parse("package:$packageName"))
+                            startActivity(intent)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            speak("Could not open battery settings.")
+                        }
+                    }
+                }
+                layoutContainer.addView(btnBattery)
+            }
+        }
     }
 
     private fun checkAccessibilityService() {

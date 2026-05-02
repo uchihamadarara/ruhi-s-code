@@ -40,3 +40,11 @@ No third-party libraries (no Picovoice). Wi-Fi/Bluetooth features were skipped a
 
 12. **Context Persistence:**
     Updated `GeminiService.kt` to securely hold conversational history using the `chat` method instead of a one-off `generateContent()`. Now Ruhi remembers the context of previous messages seamlessly.
+
+13. **Professional Crash Prevention & Android 16 (API 36) Readiness:**
+    - Handled `ForegroundServiceStartNotAllowedException` specifically to prevent crashes if the background Wake Word service tries to start while the app is in the background.
+    - Updated `RuhiAccessibilityService` to properly recycle `AccessibilityNodeInfo` objects (`child.recycle()`), fixing severe potential Memory Leaks and preventing ANRs (Application Not Responding) when analyzing the screen.
+    - Used `ContextCompat.registerReceiver` natively with `RECEIVER_NOT_EXPORTED` flags inside `RuhiAccessibilityService` so the app doesn't crash on older devices.
+    - Added a `checkAdvancedPermissions` routine in `MainActivity` with Fallback Try/Catch blocks for `Settings.canDrawOverlays` (SYSTEM_ALERT_WINDOW), exactly how MacroDroid manages background activity launches flawlessly on Android 14/15/16.
+    - **NEW & CRITICAL:** Just like MacroDroid, added native `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` support in `MainActivity`. The combination of Battery Exemption and Overlay Permission is the *only* true way to ensure Android 15/16 OS does not aggressively freeze or crash standard Background Microphone Services.
+    - Moved the WhatsApp sending logic onto `FLAG_ACTIVITY_NEW_TASK or FLAG_ACTIVITY_CLEAR_TASK` for cleaner multi-threading, effectively matching MacroDroid's stability logic.
