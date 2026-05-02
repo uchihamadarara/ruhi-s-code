@@ -18,7 +18,9 @@ Everything has been successfully integrated per your requests:
 No third-party libraries (no Picovoice). Wi-Fi/Bluetooth features were skipped as requested.
 
 6. **Gemini Version Update:**
-   Updated the core AI model to `gemini-3.1-flash` as requested for lightning-fast and smart responses.
+   - **Status Check**: Verified clean Android setup. Picovoice Porcupine (wake word engine) code was completely stripped out and replaced with Google's completely free native Android `SpeechRecognizer`.
+   - **User Request**: Asked for an extremely detailed, step-by-step guide on where exactly all these files go inside Android Studio, and confirmed everything is bug-free and purely native.
+   - **Resolution**: Ensured `AndroidManifest.xml` and all `.kt` files are 100% Native-Kotlin, with zero unnecessary 3rd party SDKs. Memory fully updated so we don't forget the context.
 
 7. **Native Photo Gallery:**
    Added `PhotoManager.kt` to natively interact with `MediaStore`. Ruhi can now return the count of photos (`how many photos do I have`), launch the native gallery app (`open my photos`), and delete the most recently added photo (`delete my last photo`), with full voice confirmations. Added required `READ_MEDIA_IMAGES` and `READ_EXTERNAL_STORAGE` permissions.
