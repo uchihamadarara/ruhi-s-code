@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0F0F1A"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Ruhi Live AI"
+        android:textColor="#FFFFFF"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="32dp" />
+
+    <EditText
+        android:id="@+id/etApiKey"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/tvTitle"
+        android:layout_marginTop="40dp"
+        android:hint="Enter Gemini API Key"
+        android:textColorHint="#777788"
+        android:textColor="#FFFFFF"
+        android:padding="16dp"
+        android:background="#1E1E2E"
+        android:inputType="textPassword" />
+
+    <Button
+        android:id="@+id/btnSaveKey"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/etApiKey"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="8dp"
+        android:text="Save Key"
+        android:backgroundTint="#00C853"
+        android:textColor="#FFFFFF" />
+
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/btnToggleSession"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="32dp"
+        android:text="Idle - Waiting for Connection"
+        android:textColor="#AABBC0"
+        android:textSize="20sp" />
+
+    <Button
+        android:id="@+id/btnToggleSession"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:layout_centerInParent="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="80dp"
+        android:backgroundTint="#6200EA"
+        android:text="START"
+        android:textStyle="bold"
+        android:textSize="32sp"
+        android:textColor="#FFFFFF" />
+
+</RelativeLayout>
