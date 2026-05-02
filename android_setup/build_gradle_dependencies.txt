@@ -1,0 +1,6 @@
+dependencies {
+    // Other dependencies...
+
+    // Picovoice Porcupine (Wake Word Engine)
+    implementation("ai.picovoice:porcupine-android:3.0.1")
+}

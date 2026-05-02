@@ -66,15 +66,23 @@ export async function getRuhiAudio(text: string): Promise<string | null> {
         responseModalities: ["AUDIO"],
         speechConfig: {
           voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: "Aoede" },
+            prebuiltVoiceConfig: { voiceName: "Kore" },
           },
         },
       },
     });
-    return response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || null;
+    
+    if (!response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data) {
+      throw new Error("Invalid or empty audio response from Gemini TTS API.");
+    }
+    
+    return response.candidates[0].content.parts[0].inlineData.data;
   } catch (error) {
-    console.error("TTS Error:", error);
-    return null;
+    if (error instanceof Error) {
+      console.error(`TTS Error in getRuhiAudio: ${error.message}\nStack: ${error.stack}`);
+    } else {
+      console.error("Unknown TTS Error in getRuhiAudio:", error);
+    }
+    return "ammm, sorry boss muje kuch sunai nahi diya.";
   }
 }
-

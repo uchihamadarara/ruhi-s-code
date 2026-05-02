@@ -1,15 +1,43 @@
+import { getFeatures } from '../components/SettingsModal';
 export function processCommand(command: string): {
   action: string;
   url?: string;
   isBrowserAction: boolean;
   webhookUrl?: string;
+  isOfflineFallback?: boolean;
 } {
   const lowerCmd = command.toLowerCase().trim();
+
+  const features = getFeatures();
+
+  // Call feature: "Call [name/number]"
+  const callMatch = lowerCmd.match(/^(?:call|dial|phone)\s+(.+)$|(.+?)\s+(?:ko\s+)?(?:call|phone)\s*(?:karo|lagao|kar|laga)/i);
+  if (callMatch && features.enableCalling) {
+    let contact = (callMatch[1] || callMatch[2]).trim();
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('ruhi_contacts');
+        if (saved) {
+          const contacts = JSON.parse(saved);
+          const found = contacts.find((c: any) => c.name.toLowerCase() === contact.toLowerCase());
+          if (found) {
+            contact = found.phone;
+          }
+        }
+      } catch (e) {}
+    }
+    // Use tel: protocol which works natively on mobile devices to open the dialer
+    return {
+      action: `Calling ${contact}, boss.`,
+      url: `tel:${encodeURIComponent(contact)}`,
+      isBrowserAction: true,
+    };
+  }
 
   // General Browsing / App Opening: "Open [app]" or "[app] open karo"
   const openMatch = lowerCmd.match(/^(?:open|start|launch)\s+(.+)$|(.+?)\s+(?:open|chalu|shuru)\s*(?:karo|kar|karo\s*na)?$/);
   if (
-    openMatch &&
+    openMatch && features.enableAppOpening &&
     !lowerCmd.includes("youtube") &&
     !lowerCmd.includes("spotify")
   ) {
@@ -37,7 +65,7 @@ export function processCommand(command: string): {
 
   // Media Search: "Play [song/video] on YouTube"
   const ytMatch = lowerCmd.match(/^play\s+(.+?)\s+on\s+youtube$/);
-  if (ytMatch) {
+  if (ytMatch && features.enableMedia) {
     const query = encodeURIComponent(ytMatch[1].trim());
     return {
       action: `Playing ${ytMatch[1]} on YouTube, boss.`,
@@ -48,7 +76,7 @@ export function processCommand(command: string): {
 
   // Media Search: "Search [query] on Spotify"
   const spotifyMatch = lowerCmd.match(/^search\s+(.+?)\s+on\s+spotify$/);
-  if (spotifyMatch) {
+  if (spotifyMatch && features.enableMedia) {
     const query = encodeURIComponent(spotifyMatch[1].trim());
     return {
       action: `Searching ${spotifyMatch[1]} on Spotify.`,
@@ -57,29 +85,36 @@ export function processCommand(command: string): {
     };
   }
 
-  // WhatsApp via MacroDroid: "whatsapp per [contact] ko bolo ki [message]"
-  const waMatch = lowerCmd.match(
-    /(?:send\s+a\s+whats?app?\s+message\s+to|whats?app?\s+p[ea]r)\s+(.+?)\s+(?:saying|ko\s+bolo\s+k[io])\s+(.+)$/i
-  );
-  if (waMatch) {
+  // WhatsApp direct message
+  const waMatch = lowerCmd.match(/(?:send\s+a\s+whats?app?\s+message\s+to|whats?app?\s+p[ea]r)\s+(.+?)\s+(?:saying|ko\s+bolo\s+k[io])\s+(.+)$/i);
+  if (waMatch && features.enableWhatsApp) {
     const contactRaw = waMatch[1].trim();
     const messageRaw = waMatch[2].trim();
-    
-    const contact = encodeURIComponent(contactRaw);
-    const message = encodeURIComponent(messageRaw);
-    
-    // Using MacroDroid Webhook silently
-    const deviceId = (import.meta as any).env.VITE_MACRODROID_DEVICE_ID || "0cdf99e6-ca05-4d8b-839a-07c426336cc9";
-    
-    if (deviceId) {
-      return {
-        action: `Sending your WhatsApp message to ${contactRaw} via MacroDroid, boss.`,
-        webhookUrl: `https://trigger.macrodroid.com/${deviceId}/ruhi_whatsapp?contact=${contact}&message=${message}`,
-        isBrowserAction: true,
-      };
+    let phoneNumber = contactRaw;
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('ruhi_contacts');
+        if (saved) {
+          const contacts = JSON.parse(saved);
+          const found = contacts.find((c) => c.name.toLowerCase() === contactRaw.toLowerCase());
+          if (found) phoneNumber = found.phone;
+        }
+      } catch (e) {}
     }
+    const message = encodeURIComponent(messageRaw);
+    return {
+      action: `Opening WhatsApp to send your message to ${contactRaw}, boss.`,
+      url: `whatsapp://send?phone=${encodeURIComponent(phoneNumber)}&text=${message}`,
+      isBrowserAction: true,
+    };
+  }
+
+  if (typeof navigator !== "undefined" && !navigator.onLine && features.enableOfflineMode) {
+    if (lowerCmd.includes("hello") || lowerCmd.includes("hi ruhi")) return { action: "Hello Boss. I am currently offline, but listening.", isBrowserAction: true, isOfflineFallback: true };
+    if (lowerCmd.includes("how are you") || lowerCmd.includes("kya haal hai")) return { action: "I am fine Boss, but my internet connection seems down.", isBrowserAction: true, isOfflineFallback: true };
+    if (lowerCmd.includes("time")) { const timeStr = new Date().toLocaleTimeString(); return { action: "The time is " + timeStr + ", Boss.", isBrowserAction: true, isOfflineFallback: true }; }
+    return { action: "Boss, I am currently offline and cannot process complex requests.", isBrowserAction: true, isOfflineFallback: true };
   }
 
   return { action: "", isBrowserAction: false };
 }
-

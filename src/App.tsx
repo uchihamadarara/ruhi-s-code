@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Mic, MicOff, Loader2, Volume2, VolumeX, Keyboard, Send, Trash2 } from "lucide-react";
+import { Mic, MicOff, Volume2, VolumeX, Keyboard, Send, Trash2, BookUser, Phone, MessageSquare, Plus, X, Settings } from "lucide-react";
 import { getRuhiResponse, getRuhiAudio, resetRuhiSession } from "./services/geminiService";
 import { processCommand } from "./services/commandService";
 import { LiveSessionManager } from "./services/liveService";
 import Visualizer from "./components/Visualizer";
 import PermissionModal from "./components/PermissionModal";
+import ContactsModal from "./components/ContactsModal";
+import SettingsModal from "./components/SettingsModal";
 import { playPCM } from "./utils/audioUtils";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -55,6 +57,8 @@ export default function App() {
   const [showTextInput, setShowTextInput] = useState(false);
   const [textInput, setTextInput] = useState("");
   const [showPermissionModal, setShowPermissionModal] = useState(false);
+  const [showContactsModal, setShowContactsModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isSessionActive, setIsSessionActive] = useState(false);
 
   const liveSessionRef = useRef<LiveSessionManager | null>(null);
@@ -95,9 +99,14 @@ export default function App() {
       
       if (!isMuted) {
         setAppState("speaking");
-        const audioBase64 = await getRuhiAudio(responseText);
-        if (audioBase64) {
-          await playPCM(audioBase64);
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+          const utter = new SpeechSynthesisUtterance(responseText);
+          window.speechSynthesis.speak(utter);
+        } else {
+          const audioBase64 = await getRuhiAudio(responseText);
+          if (audioBase64 && !audioBase64.includes('ammm')) {
+            await playPCM(audioBase64);
+          }
         }
       }
 
@@ -111,7 +120,7 @@ export default function App() {
           );
         } else if (commandResult.url) {
           // Deep links like tasker:// work better directly modifying location
-          window.location.href = commandResult.url;
+          window.open(commandResult.url, '_top');
         }
       }, 1500);
     } else {
@@ -121,9 +130,14 @@ export default function App() {
       
       if (!isMuted) {
         setAppState("speaking");
-        const audioBase64 = await getRuhiAudio(responseText);
-        if (audioBase64) {
-          await playPCM(audioBase64);
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+          const utter = new SpeechSynthesisUtterance(responseText);
+          window.speechSynthesis.speak(utter);
+        } else {
+          const audioBase64 = await getRuhiAudio(responseText);
+          if (audioBase64 && !audioBase64.includes('ammm')) {
+            await playPCM(audioBase64);
+          }
         }
       }
       setAppState("idle");
@@ -191,11 +205,22 @@ export default function App() {
 
   return (
     <div className="h-[100dvh] w-screen bg-[#050505] text-white flex flex-col items-center justify-between font-sans relative overflow-hidden m-0 p-0">
-      {showPermissionModal && (
-        <PermissionModal 
-          onClose={() => setShowPermissionModal(false)} 
-        />
-      )}
+      {
+        showPermissionModal && (
+          <PermissionModal 
+            onClose={() => setShowPermissionModal(false)} 
+          />
+        )
+      }
+
+      <AnimatePresence>
+        {showContactsModal && (
+          <ContactsModal onClose={() => setShowContactsModal(false)} />
+        )}
+        {showSettingsModal && (
+          <SettingsModal onClose={() => setShowSettingsModal(false)} />
+        )}
+      </AnimatePresence>
 
       {/* Cinematic Background Gradients */}
       <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
@@ -240,6 +265,22 @@ export default function App() {
             <option value="punjabi" className="bg-neutral-900 text-white">Punjabi</option>
           </select>
           <button
+            onClick={() => setShowSettingsModal(!showSettingsModal)}
+            className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors border border-white/10"
+            title="Settings"
+          >
+            <Settings size={18} className="opacity-70" />
+          </button>
+
+          <button
+            onClick={() => setShowContactsModal(!showContactsModal)}
+            className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors border border-white/10"
+            title="Contacts"
+          >
+            <BookUser size={18} className="opacity-70" />
+          </button>
+
+          <button
             onClick={() => setIsMuted(!isMuted)}
             className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors border border-white/10"
             title={isMuted ? "Unmute" : "Mute"}
@@ -265,10 +306,28 @@ export default function App() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="flex items-center gap-2 text-cyan-300/80 text-sm md:text-base italic font-serif"
+                  className="flex flex-col gap-2 text-cyan-300/90 text-sm md:text-base font-serif"
                 >
-                  <Loader2 size={16} className="animate-spin" />
-                  Replying...
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-1.5">
+                      <motion.div
+                        animate={{ height: ["4px", "14px", "4px"] }}
+                        transition={{ duration: 0.8, repeat: Infinity, delay: 0 }}
+                        className="w-1.5 bg-cyan-400 rounded-full"
+                      />
+                      <motion.div
+                        animate={{ height: ["4px", "20px", "4px"] }}
+                        transition={{ duration: 0.8, repeat: Infinity, delay: 0.2 }}
+                        className="w-1.5 bg-cyan-400 rounded-full"
+                      />
+                      <motion.div
+                        animate={{ height: ["4px", "10px", "4px"] }}
+                        transition={{ duration: 0.8, repeat: Infinity, delay: 0.4 }}
+                        className="w-1.5 bg-cyan-400 rounded-full"
+                      />
+                    </div>
+                    <span className="italic tracking-wider ml-1">Thinking...</span>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>

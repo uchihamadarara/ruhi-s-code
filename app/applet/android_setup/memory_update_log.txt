@@ -1,0 +1,30 @@
+Everything has been successfully integrated per your requests:
+
+1. **Call Management:**
+   Enables `CallReceiver` that connects to `TelephonyManager`. When a phone call arrives, Ruhi announces: "Boss, <Name>'s call is coming. Should I answer or reject?". CommandProcessor handles basic commands like "Accept Call" and "Reject Call" using `TelecomManager.acceptRingingCall` and `TelecomManager.endCall`. Added missing Runtime Permissions for `ANSWER_PHONE_CALLS`, `READ_CALL_LOG`, and `READ_PHONE_STATE`.
+
+2. **WhatsApp Reader (Notification Listener):**
+   Added `RuhiNotificationService` which extends `NotificationListenerService`. It intercepts incoming notifications from "com.whatsapp", extracts the sender's name and message, and broadcasts an Intent to `MainActivity` so Ruhi can speak: "Boss, new message from X on WhatsApp...". A prompt for the user to enable Notification Access in Settings is added.
+
+3. **Screen Analysis (Accessibility Service + Gemini):**
+   Added an intent receiver inside `RuhiAccessibilityService` for action `com.ruhi.ACTION_ANALYZE_SCREEN`. It uses `rootInActiveWindow` to recursively extract all text and content descriptions seen on the screen and sends it back to MainActivity. MainActivity then hooks this to Gemini Vision/Chat: "Analyze this screen text...".
+
+4. **Settings Permissions Flow:**
+   Updated `MainActivity` to request `READ_PHONE_STATE`, `ANSWER_PHONE_CALLS`, `READ_CALL_LOG` permissions. Added a prompt redirecting to Notification Listener Settings just like Accessibility Settings.
+
+5. **AI Instructions:**
+   Updated `GeminiService` to include Screen Reader and Call operations logic, matching your personal AI assistant setup tailored for an OPPO phone.
+
+No third-party libraries (no Picovoice). Wi-Fi/Bluetooth features were skipped as requested.
+
+6. **Gemini Version Update:**
+   Updated the core AI model to `gemini-3.1-flash` as requested for lightning-fast and smart responses.
+
+7. **Native Photo Gallery:**
+   Added `PhotoManager.kt` to natively interact with `MediaStore`. Ruhi can now return the count of photos (`how many photos do I have`), launch the native gallery app (`open my photos`), and delete the most recently added photo (`delete my last photo`), with full voice confirmations. Added required `READ_MEDIA_IMAGES` and `READ_EXTERNAL_STORAGE` permissions.
+
+8. **Contact Nicknames & Native Fallback:**
+   Updated `CommandProcessor` to support explicit commands like `save nickname bestie as 9876543210` or `save contact brother as Raj`. Additionally, when calling or messaging, Ruhi now first checks its internal Custom Memory Manager for nicknames. If a nickname isn't found, it seamlessly falls back to querying the native Android Contacts Provider (`ContactsContract.CommonDataKinds.Phone`) before giving up.
+
+9. **Service Toggles UI:**
+   Added a programmatic UI in `MainActivity` (eliminating the need for custom XML layouts) with simple on/off switches for "Wake Word", "Screen Analysis", "WhatsApp Reader", and "Call Announcer". Broadcast receivers (`RuhiNotificationService`, `CallReceiver`, `RuhiAccessibilityService`) and Background Services instantly respect these preferences stored in `SharedPreferences` ("RuhiSettings").

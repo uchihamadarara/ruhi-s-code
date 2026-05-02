@@ -1,0 +1,1 @@
+This folder contains instructions and Native Android Kotlin files fixed by the AI. Open this inside Android Studio on your local machine to build the real accessibility-driven Jarvis/Ruhi app.

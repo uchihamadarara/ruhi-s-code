@@ -88,7 +88,8 @@ export class LiveSessionManager {
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: "Aoede" } },
+            // Note: 'Aoede' is not supported in the Live API and causes a Network Error. Supported are 'Puck', 'Charon', 'Kore', 'Fenrir', 'Zephyr'
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
           },
           systemInstruction: getSystemInstruction(this.accent),
           inputAudioTranscription: {},
@@ -210,6 +211,7 @@ export class LiveSessionManager {
     } catch (error) {
       console.error("Failed to start Live Session:", error);
       this.stop();
+      throw error;
     }
   }
 

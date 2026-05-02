@@ -1,0 +1,14 @@
+// Add these to your Android Studio app-level build.gradle file
+
+dependencies {
+    // Other default dependencies (AppCompat, Core KTX, ConstraintLayout etc)
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.google.android.material:material:1.11.0")
+    
+    // Coroutines for background tasks (Gemini API calls)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+
+    // Google Gemini AI Native SDK
+    implementation("com.google.ai.client.generativeai:generativeai:0.2.2")
+}
