@@ -18,8 +18,23 @@ So you want to build this all natively inside Android Studio instead of a Web Ap
    - `WakeWordService.kt`
    - `RuhiAccessibilityService.kt`
 
-## 3. UI Setup
+## 3. UI and Resource Setup
 The UI is built completely programmatically in `MainActivity.kt`. You DO NOT need an `activity_main.xml` layout file!
+
+However, for Android Accessibility features to work, you MUST create an XML file:
+1. In Android Studio, go to `app/src/main/res/`
+2. Right-click on `res`, select **New > Android Resource Directory**. Set Resource type to `xml`.
+3. Right-click on the new `xml` folder, select **New > XML Resource File**. Name it `accessibility_service_config.xml`
+4. Paste the following into the file:
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:notificationTimeout="100"
+    android:canRetrieveWindowContent="true"
+    android:fastScroll="true"/>
+```
 
 ## 4. API Keys and Setup
 1. **Gemini API:** Inside `MainActivity.kt`, look for `geminiService = GeminiService(apiKey = "YOUR_GEMINI_API_KEY_HERE")` and replace it with your Google AI Studio API Key.

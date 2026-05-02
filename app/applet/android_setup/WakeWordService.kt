@@ -70,7 +70,9 @@ class WakeWordService : Service() {
                     val spokenText = matches[0].lowercase()
                     if (spokenText.contains("ruhi") || spokenText.contains("ruby") || spokenText.contains("roohi")) {
                         // Wake word detected! Notify MainActivity
-                        val broadcastIntent = Intent("WAKE_WORD_DETECTED")
+                        val broadcastIntent = Intent("WAKE_WORD_DETECTED").apply {
+                            setPackage(packageName)
+                        }
                         sendBroadcast(broadcastIntent)
                     }
                 }

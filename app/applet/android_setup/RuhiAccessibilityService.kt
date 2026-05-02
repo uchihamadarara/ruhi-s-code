@@ -52,6 +52,7 @@ class RuhiAccessibilityService : AccessibilityService() {
                 
                 val resultIntent = Intent("com.ruhi.ACTION_SCREEN_TEXT_RESULT").apply {
                     putExtra("text", sb.toString())
+                    setPackage(packageName)
                 }
                 sendBroadcast(resultIntent)
             }

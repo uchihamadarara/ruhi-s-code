@@ -24,6 +24,7 @@ class RuhiNotificationService : NotificationListenerService() {
             val intent = Intent("com.ruhi.ACTION_READ_NOTIFICATION").apply {
                 putExtra("sender", title)
                 putExtra("message", text)
+                setPackage(applicationContext.packageName)
             }
             sendBroadcast(intent)
         }

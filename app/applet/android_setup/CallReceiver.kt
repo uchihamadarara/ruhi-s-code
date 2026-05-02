@@ -25,6 +25,7 @@ class CallReceiver : BroadcastReceiver() {
                 // Notify MainActivity to announce the call
                 val announceIntent = Intent("com.ruhi.ACTION_ANNOUNCE_CALL").apply {
                     putExtra("callerName", callerName)
+                    setPackage(context.packageName)
                 }
                 context.sendBroadcast(announceIntent)
             }
