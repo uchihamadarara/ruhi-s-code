@@ -14,9 +14,13 @@ So you want to build this all natively inside Android Studio instead of a Web Ap
    - `MainActivity.kt`
    - `CommandProcessor.kt`
    - `MemoryManager.kt`
+   - `FileManager.kt`
+   - `PhotoManager.kt`
    - `GeminiService.kt`
    - `WakeWordService.kt`
    - `RuhiAccessibilityService.kt`
+   - `RuhiNotificationService.kt`
+   - `CallReceiver.kt`
 
 ## 3. UI and Resource Setup
 The UI is built completely programmatically in `MainActivity.kt`. You DO NOT need an `activity_main.xml` layout file!

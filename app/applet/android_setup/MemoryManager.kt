@@ -17,10 +17,10 @@ class MemoryManager(context: Context) {
     }
     
     fun saveContact(name: String, number: String) {
-        prefs.edit().putString("contact_\${name.lowercase()}", number).apply()
+        prefs.edit().putString("contact_${name.lowercase()}", number).apply()
     }
     
     fun getContactNumber(name: String): String? {
-        return prefs.getString("contact_\${name.lowercase()}", null)
+        return prefs.getString("contact_${name.lowercase()}", null)
     }
 }

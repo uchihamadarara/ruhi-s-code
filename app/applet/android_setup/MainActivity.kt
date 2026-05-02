@@ -45,12 +45,14 @@ class MainActivity : AppCompatActivity() {
                 "com.ruhi.ACTION_SCREEN_TEXT_RESULT" -> {
                     val text = intent.getStringExtra("text") ?: ""
                     if (text.isNotBlank()) {
-                        CoroutineScope(Dispatchers.IO).launch {
-                            val analysis = geminiService.chat("Analyze this screen text and tell me briefly what is on my screen: $text")
-                            launch(Dispatchers.Main) {
+                        geminiService.generateResponse("Analyze this screen text and tell me briefly what is on my screen: $text",
+                            onSuccess = { analysis ->
                                 speak(analysis)
+                            },
+                            onError = {
+                                speak("I couldn't analyze the screen right now.")
                             }
-                        }
+                        )
                     } else {
                         speak("I couldn't read anything on the screen, boss.")
                     }
