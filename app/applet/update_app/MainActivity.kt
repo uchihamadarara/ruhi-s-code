@@ -102,11 +102,11 @@ class MainActivity : AppCompatActivity() {
                 setPadding(0, 16, 0, 16)
                 isChecked = prefs.getBoolean(key, true)
                 
-                setOnCheckedChangeListener { _, isChecked ->
-                    prefs.edit().putBoolean(key, isChecked).apply()
+                setOnCheckedChangeListener { buttonView, isCheckedParam ->
+                    prefs.edit().putBoolean(key, isCheckedParam).apply()
                     if (key == "service_wakeword") {
                         val serviceIntent = Intent(this@MainActivity, WakeWordService::class.java)
-                        if (isChecked) {
+                        if (isCheckedParam) {
                             if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
                                 try {
                                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
@@ -118,7 +118,7 @@ class MainActivity : AppCompatActivity() {
                                     e.printStackTrace()
                                 }
                             } else {
-                                switchView.isChecked = false
+                                buttonView.isChecked = false
                             }
                         } else {
                             stopService(serviceIntent)

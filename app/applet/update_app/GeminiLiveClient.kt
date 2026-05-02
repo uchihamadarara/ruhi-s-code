@@ -17,6 +17,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 import android.media.AudioManager
+import android.net.Uri
 
 class GeminiLiveClient(
     private val context: Context,
